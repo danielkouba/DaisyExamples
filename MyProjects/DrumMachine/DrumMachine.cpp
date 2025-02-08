@@ -10,133 +10,84 @@ DaisyPod hw;
 Svf filt;
 
 
-/////////////////////////////////////////////
-// Kick drum class
-class KickDrum {
-public:
-    void Init(float sample_rate) {
-        sample_rate_ = sample_rate;
-        pitch_env_.Init(sample_rate);
-        amp_env_.Init(sample_rate);
-        osc_.Init(sample_rate);
-        noise_.Init();
-
-        // Configure pitch envelope (fast attack, short decay)
-        pitch_env_.SetTime(ADSR_SEG_ATTACK, 0.001f); // Very fast attack
-        pitch_env_.SetTime(ADSR_SEG_DECAY, 0.05f);   // Quick pitch drop
-        pitch_env_.SetSustainLevel(0.0f);            // No sustain
-        pitch_env_.SetTime(ADSR_SEG_RELEASE, 0.01f); // Quick release
-
-        // Configure amplitude envelope
-        amp_env_.SetTime(ADSR_SEG_ATTACK, 0.001f);
-        amp_env_.SetTime(ADSR_SEG_DECAY, 0.25f); // Short decay for a thumpy kick
-        amp_env_.SetSustainLevel(0.0f);         // Ensure it fully stops
-        amp_env_.SetTime(ADSR_SEG_RELEASE, 0.01f);
-
-        osc_.SetWaveform(Oscillator::WAVE_SIN); // Sine wave for deep bass
-    }
-
-    float Process() {
-        if (!amp_env_.IsRunning()) {
-            return 0.0f; // Ensure output stops when the envelope is done
+class Drum {
+    public:
+        void Init(float sample_rate, float base_freq, bool use_noise = false) {
+            sample_rate_ = sample_rate;
+            base_freq_ = base_freq;
+            use_noise_ = use_noise;
+    
+            osc_.Init(sample_rate);
+            noise_.Init();
+            filter_.Init(sample_rate);
+    
+            // Default to sine wave for low-end drums
+            osc_.SetWaveform(Oscillator::WAVE_SIN);
+            osc_.SetFreq(base_freq);
+    
+            // Envelope settings
+            amp_env_.Init(sample_rate);
+            amp_env_.SetTime(ADSR_SEG_ATTACK, 0.001f);
+            amp_env_.SetTime(ADSR_SEG_DECAY, 0.25f);
+            amp_env_.SetSustainLevel(0.0f);
+            amp_env_.SetTime(ADSR_SEG_RELEASE, 0.01f);
+    
+            pitch_env_.Init(sample_rate);
+            pitch_env_.SetTime(ADSR_SEG_ATTACK, 0.001f);
+            pitch_env_.SetTime(ADSR_SEG_DECAY, 0.05f);
+            pitch_env_.SetSustainLevel(0.0f);
+            pitch_env_.SetTime(ADSR_SEG_RELEASE, 0.01f);
+    
+            // Default filter settings for noise-based drums
+            filter_.SetFreq(2000.0f);
+            filter_.SetRes(0.7f);
         }
-
-        float pitch_mod = pitch_env_.Process(true) * 100.0f; // Pitch sweep effect
-        osc_.SetFreq(50.0f + pitch_mod); // Base freq + transient
-        float osc_out = osc_.Process();
-        float noise_out = noise_.Process() * 0.0f; // Add some noise for attack
-        return (osc_out + noise_out) * amp_env_.Process(true); // Apply amplitude envelope
-    }
-
-    void Trigger() {
-        pitch_env_.Retrigger(true);
-        amp_env_.Retrigger(true);
-    }
-
-private:
-    float sample_rate_;
-    Oscillator osc_;
-    WhiteNoise noise_;
-    Adsr pitch_env_;
-    Adsr amp_env_;
-};
-//End Kick drum class
-/////////////////////////////////////////////
-
-/////////////////////////////////////////////
-// Snare drum class
-class SnareDrum {
-public:
-    void Init(float sample_rate) {
-        sample_rate_ = sample_rate;
-
-        // Initialize oscillators and noise
-        bodyOsc_.Init(sample_rate);
-        noise_.Init();
-        noiseFilter_.Init(sample_rate);
-
-        // Set waveform for body (Triangle for a sharp attack)
-        bodyOsc_.SetWaveform(Oscillator::WAVE_TRI);
-        bodyOsc_.SetFreq(180.0f); // Tuned snare body frequency
-
-        // Configure noise filter (bandpass to shape the snare rattle)
-        noiseFilter_.SetFreq(2000.0f);
-        noiseFilter_.SetRes(0.7f);
-
-        // Configure envelopes
-        ampEnv_.Init(sample_rate);
-        ampEnv_.SetTime(ADSR_SEG_ATTACK, 0.002f);
-        ampEnv_.SetTime(ADSR_SEG_DECAY, 0.05f); // Quick decay
-        ampEnv_.SetSustainLevel(0.0f);
-        ampEnv_.SetTime(ADSR_SEG_RELEASE, 0.01f);
-
-        pitchEnv_.Init(sample_rate);
-        pitchEnv_.SetTime(ADSR_SEG_ATTACK, 0.001f);
-        pitchEnv_.SetTime(ADSR_SEG_DECAY, 0.02f); // Small pitch drop
-        pitchEnv_.SetSustainLevel(0.0f);
-        pitchEnv_.SetTime(ADSR_SEG_RELEASE, 0.01f);
-    }
-
-    float Process() {
-        if (!ampEnv_.IsRunning()) {
-            return 0.0f;
+    
+        float Process() {
+            if (!amp_env_.IsRunning()) {
+                return 0.0f;
+            }
+    
+            float pitch_mod = pitch_env_.Process(true) * 100.0f;
+            osc_.SetFreq(base_freq_ + pitch_mod);
+            float osc_out = osc_.Process() * 0.8f;
+    
+            // float noise_sample = noise_.Process(); // Get noise sample
+            // float noise_out = use_noise_ ? filter_.Process(noise_sample) * 0.4f : 0.0f;            
+            // return (osc_out + noise_out) * amp_env_.Process(true);
+    
+            return (osc_out) * amp_env_.Process(true);
         }
+    
+        void Trigger() {
+            pitch_env_.Retrigger(true);
+            amp_env_.Retrigger(true);
+        }
+    
+        void SetTone(float freq) { base_freq_ = freq; }
+        void SetDecay(float decay) { amp_env_.SetTime(ADSR_SEG_DECAY, decay); }
+        void SetFilter(float freq, float res) { filter_.SetFreq(freq); filter_.SetRes(res); }
+    
+    private:
+        float sample_rate_;
+        float base_freq_;
+        bool use_noise_;
+    
+        Oscillator osc_;
+        WhiteNoise noise_;
+        Svf filter_;
+        Adsr pitch_env_;
+        Adsr amp_env_;
+    };
+    
 
-        // Snare body (tuned triangle wave with slight pitch envelope)
-        float pitch_mod = pitchEnv_.Process(true) * 20.0f;
-        bodyOsc_.SetFreq(180.0f + pitch_mod);
-        float body = bodyOsc_.Process() * 0.5f;
+Drum kick, snare, closedhat; // Global snare drum instance
 
-        // Snare rattle (bandpassed noise)
-        // float noise_out = noiseFilter_.Process(noise_.Process()) * 0.8f;
-        float noise_out = noise_.Process() * 0.8f; // Add some noise for attack
-
-        // Mix components and apply envelope
-        return (body + noise_out) * ampEnv_.Process(true);
-    }
-
-    void Trigger() {
-        pitchEnv_.Retrigger(true);
-        ampEnv_.Retrigger(true);
-    }
-
-private:
-    float sample_rate_;
-    Oscillator bodyOsc_;
-    WhiteNoise noise_;
-    Svf noiseFilter_;
-    Adsr pitchEnv_;
-    Adsr ampEnv_;
-};
-
-// End of Snare drum class
-/////////////////////////////////////////////
-
-
-
-KickDrum kick; // Global kick drum instance
-SnareDrum snare; // Global snare drum instance
-
+void InitDrums(float sample_rate) {
+    kick.Init(sample_rate, 50.0f, false);  // Kick: Deep sine wave
+    snare.Init(sample_rate, 180.0f, true); // Snare: Noise + triangle wave
+    closedhat.Init(sample_rate, 3000.0f, true); // Hi-hat: Mostly noise, high frequency
+}
 
 void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                    AudioHandle::InterleavingOutputBuffer out,
@@ -144,13 +95,17 @@ void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 {
     float kick_out;
     float snare_out;
+    float closedhat_out;
+
     for(size_t i = 0; i < size; i += 2)
     {
         kick_out = kick.Process(); // Process kick drum
         snare_out = snare.Process(); // Process snare drum
+        closedhat_out = closedhat.Process(); // Process closed hat
         filt.Process(kick_out); // Apply filter to kick drum if needed
         filt.Process(snare_out); // Apply filter to snare drum if needed
-        out[i] = out[i + 1] = filt.Low(); // Output kick drum only
+        filt.Process(closedhat_out); // Apply filter to snare drum if needed
+        out[i] = out[i + 1] = filt.Low(); // Output
     }
 }
 
@@ -171,11 +126,10 @@ void HandleMidiMessage(MidiEvent m)
 
             if(p.velocity > 0) // Ignore note-offs (velocity = 0)
             {
-                if (p.note == 36) { // C2 (MIDI note 36) triggers the kick drum
-                    kick.Trigger();
-                }
-                else if (p.note == 37) { // C#2 (MIDI note 37) triggers the snare drum
-                    snare.Trigger();
+                switch (p.note) {
+                    case 36: kick.Trigger(); break; // Kick (C2)
+                    case 37: snare.Trigger(); break; // Snare (C#2)
+                    case 38: closedhat.Trigger(); break; // Hi-hat (D2)
                 }
             }
             break;
@@ -219,8 +173,7 @@ int main(void)
     // Initialize synthesis
     float samplerate = hw.AudioSampleRate();
     filt.Init(samplerate);
-    kick.Init(samplerate); // Initialize kick drum
-    snare.Init(samplerate); // Initialize snare drum
+    InitDrums(samplerate);
 
     // Start audio and MIDI
     hw.StartAdc();
