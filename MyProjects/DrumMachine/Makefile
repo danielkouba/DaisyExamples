@@ -1,8 +1,8 @@
 # Project Name
-TARGET = DrumMachine
+TARGET = main
 
 # Sources
-CPP_SOURCES = DrumMachine.cpp
+CPP_SOURCES = ./src/main.cpp ./src/DrumFactory.cpp ./src/KickDrum.cpp
 
 # Library Locations
 LIBDAISY_DIR = ../../libDaisy/

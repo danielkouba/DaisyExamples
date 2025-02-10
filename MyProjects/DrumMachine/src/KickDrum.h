@@ -12,7 +12,7 @@ class KickDrum : public DrumSound {
 public:
     KickDrum(DaisyPod* hw);
     void trigger() override;
-    void setParameter(ParameterType param, float value) overrride;
+    void setParameter(ParameterType param, float value) override;
     float Process() override;
 
 private:

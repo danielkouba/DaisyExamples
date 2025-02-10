@@ -1,12 +1,18 @@
 #include "KickDrum.h"
 
-KickDrum::KickDrum(DaisyPod* hw) : hardware(hw), pitch(50.0f), decay(0.5f) {
+const float BASE_PITCH = 40.0f;
+const float PITCH_RANGE = 80.0f;
+
+KickDrum::KickDrum(DaisyPod* hw)
+    : hardware(hw),
+      pitch(50.0f),
+      decay(0.5f) {
     osc.Init(hw->seed.AudioSampleRate());
-    osc.SetWaveform(Oscillato::WAVE_SIN);
+    osc.SetWaveform(Oscillator::WAVE_SIN);
     env.Init(hw->seed.AudioSampleRate());
     env.SetTime(ADSR_SEG_ATTACK, 0.01f);
     env.SetTime(ADSR_SEG_DECAY, decay);
-    env.SetSustainLevel(0.0f);
+    // env.SetSustainLevel(0.0f);
     env.SetTime(ADSR_SEG_RELEASE, 0.0f);
 }
 
@@ -18,7 +24,7 @@ void KickDrum::trigger() {
 void KickDrum::setParameter(ParameterType param, float value) {
     switch (param) {
         case ParameterType::Pitch:
-            pitch = 40.0f + (value*80.0f);
+            pitch = BASE_PITCH + (value * PITCH_RANGE);
             hardware->seed.PrintLine("Kick Pitch Set to: %.2f Hz", pitch);
             break;
         case ParameterType::Decay:

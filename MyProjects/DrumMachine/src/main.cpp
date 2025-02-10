@@ -24,11 +24,11 @@ void setupDrumMachine() {
     hw.Init();
     hw.seed.StartLog();
     drumKit.push_back(DrumFactory::createDrum("kick", &hw));
-    drumKit.push_back(DrumFactory::createDrum("snare", &hw));
+    // drumKit.push_back(DrumFactory::createDrum("snare", &hw));
     hw.seed.StartAudio(AudioCallback);
 }
 
-void triggerDrum(int index) {
+void triggerDrum(size_t index) {
     if (index < drumKit.size()) {
         drumKit[index]->trigger();
     }
@@ -39,8 +39,8 @@ void updateParameters() {
     float knob2Value = hw.knob2.Process();
 
     if (!drumKit.empty()) {
-        drumKit[0]->setParameter(Parameter::Pitch, knob1Value);
-        drumKit[0]->setParameter(Parameter::Decay, knob2Value);
+        drumKit[0]->setParameter(ParameterType::Pitch, knob1Value);
+        drumKit[0]->setParameter(ParameterType::Decay, knob2Value);
     }
 }
 
