@@ -2,7 +2,7 @@
 TARGET = main
 
 # Sources
-CPP_SOURCES = ./src/main.cpp ./src/DrumFactory.cpp ./src/KickDrum.cpp
+CPP_SOURCES = ./src/main.cpp ./src/DrumFactory.cpp ./src/KickDrum.cpp ./src/SnareDrum.cpp
 
 # Library Locations
 LIBDAISY_DIR = ../../libDaisy/

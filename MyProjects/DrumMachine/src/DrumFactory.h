@@ -3,7 +3,7 @@
 
 #include "DrumSound.h"
 #include "KickDrum.h"
-// #include "SnareDrum.h"
+#include "SnareDrum.h"
 
 #include <memory>
 
