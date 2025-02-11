@@ -1,42 +1,38 @@
 #include "KickDrum.h"
 
-const float BASE_PITCH = 40.0f;
-const float PITCH_RANGE = 80.0f;
+KickDrum::KickDrum(DaisyPod* hw) : hardware(hw), pitch(440.0f), decay(0.5f) {
+    // Initialize the oscillator
+    osc.Init(hw->AudioSampleRate());
+    osc.SetWaveform(osc.WAVE_SIN);
+    osc.SetFreq(pitch);
 
-KickDrum::KickDrum(DaisyPod* hw)
-    : hardware(hw),
-      pitch(50.0f),
-      decay(0.5f) {
-    osc.Init(hw->seed.AudioSampleRate());
-    osc.SetWaveform(Oscillator::WAVE_SIN);
-    env.Init(hw->seed.AudioSampleRate());
-    env.SetTime(ADSR_SEG_ATTACK, 0.01f);
-    env.SetTime(ADSR_SEG_DECAY, decay);
-    // env.SetSustainLevel(0.0f);
-    env.SetTime(ADSR_SEG_RELEASE, 0.0f);
+    // Initialize the envelope
+    env.Init(hw->AudioSampleRate());
+    env.SetTime(ADENV_SEG_ATTACK, 0.01f);
+    env.SetTime(ADENV_SEG_DECAY, decay);
+    env.SetMax(1.0f);
+    env.SetMin(0.0f);
 }
 
 void KickDrum::trigger() {
-    hardware->seed.PrintLine("Kick Drum Triggered! Pitch: %.2f Hz, Decay: %.2f", pitch, decay);
     env.Trigger();
 }
 
 void KickDrum::setParameter(ParameterType param, float value) {
     switch (param) {
         case ParameterType::Pitch:
-            pitch = BASE_PITCH + (value * PITCH_RANGE);
-            hardware->seed.PrintLine("Kick Pitch Set to: %.2f Hz", pitch);
+            pitch = value;
+            osc.SetFreq(pitch);
             break;
         case ParameterType::Decay:
-            decay = 0.1f + (value * 0.4f);
-            env.SetTime(ADSR_SEG_DECAY, decay);
-            hardware->seed.PrintLine("Kick Decay Set to: %.2f", decay);
+            decay = value;
+            env.SetTime(ADENV_SEG_DECAY, decay);
+            break;
+        default:
             break;
     }
 }
 
 float KickDrum::Process() {
-    float env_out = env.Process();
-    osc.SetFreq(pitch * (1.0f + env_out * 0.5f));
-    return osc.Process() * env_out;
+    return osc.Process() * env.Process();
 }
