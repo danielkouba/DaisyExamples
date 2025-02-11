@@ -15,7 +15,6 @@ SnareDrum::SnareDrum(DaisyPod* hw) : hardware(hw), noise_amt(0.7f), decay(0.3f) 
 }
 
 void SnareDrum::trigger() {
-    hardware->seed.PrintLine("Snare Drum Triggered! Noise Amt: %.2f, Decay: %.2f", noise_amt, decay);
     env.Trigger();
 }
 
@@ -23,7 +22,6 @@ void SnareDrum::setParameter(ParameterType param, float value) {
     switch (param) {
         case ParameterType::Pitch: // For snare, this controls noise intensity
             noise_amt = value;
-            hardware->seed.PrintLine("Snare Noise Set to: %.2f", noise_amt);
             break;
         case ParameterType::Decay:
             decay = 0.1f + (value * 0.4f); // Decay range: 0.1s - 0.5s
@@ -40,7 +38,7 @@ float SnareDrum::Process() {
         float noise_sample = noise.Process() * noise_amt;  // Generate noise
         filter.Process(noise_sample * env_out);  // Apply filter (but no return value)
 
-        float filtered_sample = filter.Low(); // ✅ Get the actual filtered output
+        float filtered_sample = filter.Low(); // Get the actual filtered output
         return filtered_sample;
     } else {
         return 0.0f; // No sound when envelope is inactive
