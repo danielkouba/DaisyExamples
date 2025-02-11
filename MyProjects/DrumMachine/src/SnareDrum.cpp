@@ -26,7 +26,6 @@ void SnareDrum::setParameter(ParameterType param, float value) {
         case ParameterType::Decay:
             decay = 0.1f + (value * 0.4f); // Decay range: 0.1s - 0.5s
             env.SetTime(ADSR_SEG_DECAY, decay);
-            hardware->seed.PrintLine("Snare Decay Set to: %.2f", decay);
             break;
     }
 }

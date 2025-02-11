@@ -21,7 +21,7 @@ void KickDrum::trigger() {
 void KickDrum::setParameter(ParameterType param, float value) {
     switch (param) {
         case ParameterType::Pitch:
-            pitch = value;
+            pitch = value * 1000.0f; // Map to a reasonable range
             osc.SetFreq(pitch);
             break;
         case ParameterType::Decay:
@@ -34,5 +34,5 @@ void KickDrum::setParameter(ParameterType param, float value) {
 }
 
 float KickDrum::Process() {
-    return osc.Process() * env.Process();
+    return osc.Process() * env.Process() * 1.5f;
 }
